@@ -13,7 +13,6 @@ typedef struct conn_queue_item_t {
     int               sfd;
     conn_state  init_state;
     conn *c;
-    void    *ssl;
     struct conn_queue_item_t          *next;
 }conn_queue_item;
 #endif

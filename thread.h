@@ -9,6 +9,7 @@
 #define _THREAD_H
 #include "conn_queue.h"
 #include <event2/event.h>
+#include <event2/event-config.h>
 typedef struct thread_t
 {
   pthread_t thread_id;        /* unique ID of this thread */
