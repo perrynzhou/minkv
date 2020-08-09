@@ -23,4 +23,5 @@ typedef enum conn_state_t {
     conn_max_state   /**< Max state value (used for assertion) */
 }conn_state;
 void event_handler(const int fd, const short which, void *arg);
+
 #endif

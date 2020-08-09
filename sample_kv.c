@@ -40,6 +40,7 @@ inline static void sample_kv_init_conn(sample_kv *sv, size_t conn_max_size)
 }
 inline static int sample_kv_init_socket(const char *addr, int port)
 {
+  
   return -1;
 }
 int main(void)
