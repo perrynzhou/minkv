@@ -15,4 +15,6 @@ typedef struct conn_queue_item_t {
     conn *c;
     struct conn_queue_item_t          *next;
 }conn_queue_item;
+conn_queue_item *conn_queue_item_create(int sfd,conn_state state,conn *c);
+void conn_queue_item_free(conn_queue_item *cqi);
 #endif
