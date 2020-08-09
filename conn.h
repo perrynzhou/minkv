@@ -8,20 +8,19 @@
 #ifndef _CONN_H
 #define _CONN_H
 #include "conn_state.h"
-#include "thread.h"
 #include <event2/event.h>
-typedef struct conn_t {
-    int    sfd;
-    conn_state  state;
-    struct event event;
-    void   *item;     /* for commands set/add/replace  */
-    /* data for UDP clients */
-    int    request_id; /* Incoming UDP request ID, if this is a UDP "connection" */
-    struct sockaddr_in6 request_addr; /* udp: Who sent the most recent request */
-    socklen_t request_addr_size;
-    /* Used for generating a list of conn structures */
-    thread *thread; /* Pointer to the thread object serving this connection */
-    ssize_t (*read)(conn  *c, void *buf, size_t count);
-    ssize_t (*write)(conn *c, void *buf, size_t count);
-}conn;
+typedef struct conn_t
+{
+  int sfd;
+  conn_state state;
+  struct event event;
+  short ev_flags;
+  void *item;
+  ssize_t (*read)(conn *c, void *buf, size_t count);
+  ssize_t (*write)(conn *c, void *buf, size_t count);
+} conn;
+conn *conn_new(int sfd, conn_state state, void *item, const int event_flags);
+int conn_init_eventbase(conn *c, struct event_base *base);
+void conn_event_handler(const int fd, const short which, void *arg);
+void conn_delete(conn *con);
 #endif

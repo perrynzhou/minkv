@@ -1,12 +1,12 @@
 /*************************************************************************
-  > File Name: conn_state.h
+  > File Name: conn_utils.h
   > Author:perrynzhou 
   > Mail:perrynzhou@gmail.com 
   > Created Time: Sat 08 Aug 2020 06:29:05 PM CST
  ************************************************************************/
 
-#ifndef _CONN_STATE_H
-#define _CONN_STATE_H
+#ifndef _CONN_UTILS_H
+#define _CONN_UTILS_H
 typedef enum conn_state_t {
     conn_listening,  /**< the socket which listens for connections */
     conn_new_cmd,    /**< Prepare connection for next command */
@@ -22,4 +22,5 @@ typedef enum conn_state_t {
     conn_watch,      /**< held by the logger thread as a watcher */
     conn_max_state   /**< Max state value (used for assertion) */
 }conn_state;
+void event_handler(const int fd, const short which, void *arg);
 #endif
