@@ -16,10 +16,11 @@ typedef struct conn_t
   struct event event;
   short ev_flags;
   void *item;
+  void *ctx;
   ssize_t (*read)(conn *c, void *buf, size_t count);
   ssize_t (*write)(conn *c, void *buf, size_t count);
 } conn;
-conn *conn_new(int sfd, conn_state state, void *item, const int event_flags);
+conn *conn_new(int sfd, conn_state state, void *item, const int event_flags,void *ctx);
 int conn_init_eventbase(conn *c, struct event_base *base);
 void conn_event_handler(const int fd, const short which, void *arg);
 void conn_delete(conn *con);

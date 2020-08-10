@@ -19,5 +19,9 @@ typedef struct thread_t
   int notify_send_fd;         /* sending end of notify pipe */
   conn_queue *new_conn_queue; /* queue of new connections to handle */
 } thread;
+typedef struct thread_param_t {
 
+}thread_param;
+int thread_init(thread *thd,int notify_send_fd,int notify_receive_fd);
+void *thread_start(void *arg);
 #endif

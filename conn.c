@@ -8,15 +8,22 @@
 #include "conn.h"
 #include "conn_state.h"
 #include <stdio.h>
-conn *conn_new(int sfd, conn_state state, void *item, const int event_flags, struct event_base *base)
+conn *conn_new(int sfd, conn_state state, void *item, const int event_flags, void *ctx)
 {
-  conn *con = (conn *)calloc(1, sizeof(conn));
-  assert(conn != NULL);
-  con->sfd = sfd;
-  con->state = state;
-  con->item = item;
-  con->write = NULL;
-  con->read = NULL;
+  conn **gconns = (conn **)ctx;
+  conn *con = NULL;
+  if (gconns[sfd] == NULL)
+  {
+    con = (conn *)calloc(1, sizeof(conn));
+    assert(conn != NULL);
+    con->sfd = sfd;
+    con->state = state;
+    con->item = item;
+    con->write = NULL;
+    con->read = NULL;
+    con->ctx = ctx;
+    gconns[sfd] = c;
+  }
   return con;
 }
 int conn_init_eventbase(conn *c, struct event_base *base)
