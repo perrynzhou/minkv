@@ -6,6 +6,7 @@
  ************************************************************************/
 
 #include "connection.h"
+#include "hashfn.h"
 #include "utils.h"
 #include "sample_kv.h"
 #include "queue.h"
@@ -14,6 +15,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
+#include <event2/event_compat.h>
 //parse command
 void connection_handle_parse_cmd(connection *c)
 {

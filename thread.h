@@ -10,6 +10,7 @@
 #include "queue.h"
 #include <event2/event.h>
 #include <event2/event-config.h>
+#include <event2/event_struct.h>
 typedef struct thread_t
 {
   pthread_t thread_id;        /* unique ID of this thread */

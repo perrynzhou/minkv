@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "thread.h"
 #include <event2/event.h>
+#include <event2/event_struct.h>
 typedef struct connection_t
 {
   int sfd;

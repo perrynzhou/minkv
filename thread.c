@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <event2/event_compat.h>
+
 static void thread_event_process(evutil_socket_t fd, short which, void *arg)
 {
   thread *thd = arg;
