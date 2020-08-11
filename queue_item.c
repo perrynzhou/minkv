@@ -6,6 +6,8 @@
  ************************************************************************/
 #include "queue_item.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 queue_item *queue_item_create(int sfd, int state, int event_flags, void *ctx)
 {
   queue_item *item = (queue_item *)calloc(1, sizeof(queue_item));

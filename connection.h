@@ -8,6 +8,7 @@
 #ifndef _CONNECTION_H
 #define _CONNECTION_H
 #include "utils.h"
+#include "thread.h"
 #include <event2/event.h>
 typedef struct connection_t
 {

@@ -7,8 +7,9 @@
 #include "connection.h"
 #include "thread.h"
 #include "queue.h"
-#include "queue_item.h"
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 static void thread_event_process(evutil_socket_t fd, short which, void *arg)
 {
   thread *thd = arg;
@@ -24,7 +25,7 @@ static void thread_event_process(evutil_socket_t fd, short which, void *arg)
   switch (buf[0])
   {
   case 'c':
-    item = conn_queue_pop(thd->new_connection_queue);
+    item = queue_pop(thd->new_connection_queue);
     if (NULL == item)
     {
       break;
@@ -33,9 +34,10 @@ static void thread_event_process(evutil_socket_t fd, short which, void *arg)
     {
     case queue_new_conn:
       c = connection_new(item->sfd, item->init_state, item->event_flags,thd->base, item->ctx);
+      c->thd =thd;
       break;
     }
-    cqi_free(item);
+    queue_item_free(item);
     break;
   case 's':
     event_base_loopexit(thd->base, NULL);
@@ -45,7 +47,7 @@ static void thread_event_process(evutil_socket_t fd, short which, void *arg)
 
 int thread_init(thread *thd, int notify_send_fd, int notify_receive_fd)
 {
-  thd->new_connection_queue = conn_queue_create();
+  thd->new_connection_queue = queue_create();
   thd->notify_receive_fd = notify_receive_fd;
   thd->notify_send_fd = notify_send_fd;
   struct event_config *ev_config;
@@ -53,9 +55,9 @@ int thread_init(thread *thd, int notify_send_fd, int notify_receive_fd)
   event_config_set_flag(ev_config, EVENT_BASE_FLAG_NOLOCK);
   thd->base = event_base_new_with_config(ev_config);
   event_config_free(ev_config);
-  //每个IO时间的回调函数设置为thread_event_process，当有IO event时候回调用thread_libevent_process函数处理
-  event_set(&thd->notify_event, thd->notify_receive_fd,
-            EV_READ | EV_PERSIST, thread_event_process, &thd);
+  //每个IO时间的回调函数设置为thread_event_process，当有IO event时候回调用thread_event_process函数处理
+
+  event_set(&thd->notify_event, thd->notify_receive_fd,EV_READ | EV_PERSIST, thread_event_process, (void *)thd);
   event_base_set(thd->base, &thd->notify_event);
 
   if (event_add(&thd->notify_event, 0) == -1)

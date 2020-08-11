@@ -1,12 +1,12 @@
 /*************************************************************************
-  > File Name: conn_queue_item.h
+  > File Name: queue_item.h
   > Author:perrynzhou 
   > Mail:perrynzhou@gmail.com 
   > Created Time: Sat 08 Aug 2020 06:27:55 PM CST
  ************************************************************************/
 
-#ifndef _CONN_QUEUE_ITEM_H
-#define _CONN_QUEUE_ITEM_H
+#ifndef _QUEUE_ITEM_H
+#include <stdint.h>
 typedef enum queue_item_mode_t
 {
   queue_new_conn = 0,

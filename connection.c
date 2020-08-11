@@ -9,9 +9,11 @@
 #include "utils.h"
 #include "sample_kv.h"
 #include "queue.h"
-#include "queue_item.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <unistd.h>
 //parse command
 void connection_handle_parse_cmd(connection *c)
 {
@@ -47,6 +49,9 @@ void connection_execute_cmd(connection *c)
     break;
   }
 }
+static void connection_event_handler(const int fd, const short which, void *arg);
+static bool connection_update_event(connection *c, const int new_flags);
+static void connection_do_request(connection *c);
 static bool connection_update_event(connection *c, const int new_flags)
 {
   assert(c != NULL);
@@ -68,6 +73,31 @@ static bool connection_update_event(connection *c, const int new_flags)
     return false;
   }
   return true;
+}
+//多线程来处理客户端请求，这里把fd封装到CQ_ITEM中，然后通知摸个线程去处理这个fd
+static void dispatch_connection(int sfd, int init_state, int event_flags, void *ctx)
+{
+  sample_kv *sv = (sample_kv *)ctx;
+  queue_item *item = queue_item_create(sfd, init_state, event_flags, ctx);
+  char buf[1];
+  if (item == NULL)
+  {
+    close(sfd);
+    fprintf(stderr, "Failed to allocate memory for connectionection object\n");
+    return;
+  }
+  int tid = hash_jump_consistent(sfd, sv->thread_size);
+
+  thread *thd = &sv->threads[tid];
+  //把item放到某个线程的连接队列中
+  queue_push(thd->new_connection_queue, item);
+
+  //这里通知写入一个字符到工作线程的notify_send_fd，工作线程的把notify_recv_fd注册到event中，有IO事件就通知
+  buf[0] = 'c';
+  if (write(thd->notify_send_fd, buf, 1) != 1)
+  {
+    perror("Writing to thread notify pipe");
+  }
 }
 static void connection_do_request(connection *c)
 {
@@ -103,31 +133,7 @@ static void connection_do_request(connection *c)
   }
   return;
 }
-//多线程来处理客户端请求，这里把fd封装到CQ_ITEM中，然后通知摸个线程去处理这个fd
-static void dispatch_connection(int sfd, int init_state, int event_flags, void *ctx)
-{
-  sample_kv *sv = (sample_kv *)ctx;
-  queue_item *item = queue_item_create(sfd, init_state, event_flags, ctx);
-  char buf[1];
-  if (item == NULL)
-  {
-    close(sfd);
-    fprintf(stderr, "Failed to allocate memory for connectionection object\n");
-    return;
-  }
-  int tid = hash_jump_consistent(sfd, sv->thread_size);
 
-  thread *thd = &sv->threads[tid];
-  //把item放到某个线程的连接队列中
-  queue_push(thd->new_connection_queue, item);
-
-  //这里通知写入一个字符到工作线程的notify_send_fd，工作线程的把notify_recv_fd注册到event中，有IO事件就通知
-  buf[0] = 'c';
-  if (write(thd->notify_send_fd, buf, 1) != 1)
-  {
-    perror("Writing to thread notify pipe");
-  }
-}
 static void connection_event_handler(const int fd, const short which, void *arg)
 {
   connection *c = (connection *)arg;

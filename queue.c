@@ -6,34 +6,45 @@
  ************************************************************************/
 
 #include "queue.h"
-#include "queue_item.h"
-#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 queue *queue_create(){
-
+    queue *q = (queue *)calloc(1,sizeof(queue));
+    assert(q!=NULL);
+    q->head = q->tail = NULL;
+    pthread_mutex_init(&q->lock,NULL);
+    return q;
 }
-void queue_push(queue *cq, void *item)
+void queue_push(queue *q, void *item)
 {
 
-  if (NULL == cq->tail)
+  if (NULL == q->tail)
   {
-    cq->head = (queue_item *)item;
+    q->head = (queue_item *)item;
   }
   else
   {
-    cq->tail->next = item;
+    q->tail->next = item;
   }
-  cq->tail = item;
+  q->tail = item;
 }
-void *queue_pop(queue *cq)
+void *queue_pop(queue *q)
 {
-    queue_item *item = (queue_item *)cq->head;
+    queue_item *item = (queue_item *)q->head;
     if (NULL != item) {
-        cq->head = item->next;
-        if (NULL == cq->head)
-            cq->tail = NULL;
+        q->head = item->next;
+        if (NULL == q->head)
+            q->tail = NULL;
     }
     return item;
 }
-void connection_queue_free(queue *cq)
+void queue_free(queue *q)
 {
+  if(q!=NULL)
+  {
+    pthread_mutex_destroy(&q->lock);
+    q->head = q->tail = NULL;
+    free(q);
+    q=NULL;
+  }
 }

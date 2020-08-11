@@ -15,7 +15,7 @@ typedef struct queue_t {
     pthread_mutex_t lock;
 }queue;
 queue *queue_create();
-void queue_push(queue *cq,void *item);
-void *queue_pop(queue *cq);
-void queue_free(queue *cq);
+void queue_push(queue *q,void *item);
+void *queue_pop(queue *q);
+void queue_free(queue *q);
 #endif

@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <assert.h>
+#include <string.h>
+#include <unistd.h>
+#include <event2/event.h>
 static int stop_main_loop = 0;
 static void sig_handler(const int sig)
 {
@@ -65,7 +68,7 @@ inline static void init_connection(sample_kv *sv, int sfd, size_t connection_max
 int main(int argc, char *argv[])
 {
   sample_kv *sv = (sample_kv *)calloc(1, sizeof(sample_kv));
-  int sock = init_tcp_sock(argv[1], argv[2]);
+  int sock = init_tcp_sock(argv[1], atoi(argv[2]));
   if (sock != -1)
   {
     init_main_base(sv);
