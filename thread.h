@@ -7,7 +7,7 @@
 
 #ifndef _THREAD_H
 #define _THREAD_H
-#include "conn_queue.h"
+#include "queue.h"
 #include <event2/event.h>
 #include <event2/event-config.h>
 typedef struct thread_t
@@ -17,11 +17,9 @@ typedef struct thread_t
   struct event notify_event;  /* listen event for notify pipe */
   int notify_receive_fd;      /* receiving end of notify pipe */
   int notify_send_fd;         /* sending end of notify pipe */
-  conn_queue *new_conn_queue; /* queue of new connections to handle */
+  queue *new_connection_queue; /* queue of new connections to handle */
+  void *ctx;
 } thread;
-typedef struct thread_param_t {
-
-}thread_param;
 int thread_init(thread *thd,int notify_send_fd,int notify_receive_fd);
 void *thread_start(void *arg);
 #endif
