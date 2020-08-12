@@ -152,7 +152,7 @@ static void connection_event_handler(const int fd, const short which, void *arg)
 connection *connection_new(int sfd, state state, const int event_flags, struct event_base *base, void *ctx)
 {
   sample_kv *sv = (sample_kv *)ctx;
-  connection *con = NULL;
+  connection *con = sv->connections[sfd];
   if (sv->connections[sfd] == NULL)
   {
     con = (connection *)calloc(1, sizeof(connection));
