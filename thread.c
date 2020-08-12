@@ -37,6 +37,7 @@ static void thread_event_process(evutil_socket_t fd, short which, void *arg)
     case queue_new_conn:
       c = connection_new(item->sfd, item->init_state, item->event_flags,thd->base, item->ctx);
       c->thd =thd;
+      c->state = parse_cmd_state;
       break;
     }
     queue_item_free(item);
