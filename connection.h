@@ -20,6 +20,7 @@ typedef struct connection_t
   void *item;
   thread *thd;
   void *ctx;
+   short  which;   /** which events were just triggered */
 } connection;
 connection *connection_new(int sfd, state state, const int event_flags,struct event_base *base, void *ctx);
 void connection_free(connection *con);

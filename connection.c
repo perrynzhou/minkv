@@ -55,7 +55,6 @@ void connection_execute_cmd(connection *c)
     connection_handle_close_cmd(c);
     break;
   }
-  //c->state = wait_cmd_state;
 }
 
 static bool connection_update_event(connection *c, const int new_flags)
@@ -133,10 +132,7 @@ static void connection_do_request(connection *c)
       break;
     case parse_cmd_state:
       connection_execute_cmd(c);
-      if (connection_update_event(c, EV_READ | EV_PERSIST))
-      {
-        stop = true;
-      }
+      connection_update_event(c,0);
       break;
     }
   }
@@ -147,6 +143,7 @@ static void connection_event_handler(const int fd, const short which, void *arg)
 {
   connection *c = (connection *)arg;
   assert(c != NULL);
+  c->which =which;
   /* sanity */
   if (fd != c->sfd)
   {
