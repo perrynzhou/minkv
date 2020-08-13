@@ -9,7 +9,8 @@
 #define _UTILS_H
 typedef enum state_t {
     listen_state, 
-    parse_cmd_state,  
+    parse_cmd_state,
+    wait_cmd_state,  
     put_cmd_state,
     get_cmd_state,  
     del_cmd_state,

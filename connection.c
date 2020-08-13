@@ -8,6 +8,7 @@
 #include "connection.h"
 #include "hashfn.h"
 #include "utils.h"
+#include "log.h"
 #include "sample_kv.h"
 #include "queue.h"
 #include <stdio.h>
@@ -16,6 +17,9 @@
 #include <assert.h>
 #include <unistd.h>
 #include <event2/event_compat.h>
+static void connection_event_handler(const int fd, const short which, void *arg);
+static bool connection_update_event(connection *c, const int new_flags);
+static void connection_do_request(connection *c);
 //parse command
 void connection_handle_parse_cmd(connection *c)
 {
@@ -34,7 +38,9 @@ void connection_handle_close_cmd(connection *c)
 }
 void connection_execute_cmd(connection *c)
 {
-  connection_execute_cmd(c);
+  write(c->sfd, "success", 7);
+  c->state = wait_cmd_state;
+  connection_update_event(c,EV_WRITE | EV_PERSIST);
   switch (c->state)
   {
   case put_cmd_state:
@@ -51,9 +57,7 @@ void connection_execute_cmd(connection *c)
     break;
   }
 }
-static void connection_event_handler(const int fd, const short which, void *arg);
-static bool connection_update_event(connection *c, const int new_flags);
-static void connection_do_request(connection *c);
+
 static bool connection_update_event(connection *c, const int new_flags)
 {
   assert(c != NULL);
@@ -130,6 +134,9 @@ static void connection_do_request(connection *c)
     case parse_cmd_state:
       connection_execute_cmd(c);
       break;
+    case wait_cmd_state:
+      c->state = parse_cmd_state;
+      break;
     }
   }
   return;
@@ -150,7 +157,7 @@ static void connection_event_handler(const int fd, const short which, void *arg)
 connection *connection_new(int sfd, state state, const int event_flags, struct event_base *base, void *ctx)
 {
   sample_kv *sv = (sample_kv *)ctx;
-  connection *con = (connection *)hash_list_search(sv->connections,sfd);
+  connection *con = (connection *)hash_list_search(sv->connections, sfd);
   if (con == NULL)
   {
     con = (connection *)calloc(1, sizeof(connection));
@@ -158,7 +165,7 @@ connection *connection_new(int sfd, state state, const int event_flags, struct e
     con->sfd = sfd;
     con->state = state;
     con->ctx = ctx;
-    hash_list_insert(sv->connections,sfd,con);
+    hash_list_insert(sv->connections, sfd, con);
   }
   event_set(&con->event, sfd, event_flags, connection_event_handler, (void *)con);
   event_base_set(base, &con->event);
@@ -168,7 +175,7 @@ connection *connection_new(int sfd, state state, const int event_flags, struct e
     perror("event_add");
     return NULL;
   }
-  log_info("trigge a new conenction %d",sfd);
+  log_info("trigge a new conenction %d", sfd);
   return con;
 }
 
