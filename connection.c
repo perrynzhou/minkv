@@ -168,6 +168,7 @@ connection *connection_new(int sfd, state state, const int event_flags, struct e
     perror("event_add");
     return NULL;
   }
+  log_info("trigge a new conenction %d",sfd);
   return con;
 }
 

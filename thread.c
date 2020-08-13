@@ -5,6 +5,7 @@
   > Created Time: Sat 08 Aug 2020 06:34:35 PM CST
  ************************************************************************/
 #include "connection.h"
+#include "log.h"
 #include "thread.h"
 #include "queue.h"
 #include <stdio.h>
@@ -38,6 +39,7 @@ static void thread_event_process(evutil_socket_t fd, short which, void *arg)
       c = connection_new(item->sfd, item->init_state, item->event_flags,thd->base, item->ctx);
       c->thd =thd;
       c->state = parse_cmd_state;
+      log_info("thread %ld init %d connection",pthread_self(),c->sfd);
       break;
     }
     queue_item_free(item);
@@ -68,6 +70,7 @@ int thread_init(thread *thd, int notify_send_fd, int notify_receive_fd)
     fprintf(stderr, "Can't monitor libevent notify pipe\n");
     exit(1);
   }
+  log_info("init thread %ld success",thd->thread_id);
 }
 void *thread_start(void *arg)
 {

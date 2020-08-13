@@ -40,6 +40,7 @@ static void init_main_base(sample_kv *sv)
   event_config_set_flag(ev_config, EVENT_BASE_FLAG_NOLOCK);
   sv->main_base = event_base_new_with_config(ev_config);
   event_config_free(ev_config);
+  log_info("init main_base success");
 }
 
 inline static void init_worker_thread(sample_kv *sv, size_t thread_size)
@@ -55,6 +56,7 @@ inline static void init_worker_thread(sample_kv *sv, size_t thread_size)
       perror("can't create pipe channel");
       exit(-1);
     }
+    log_info("init thread %d",i);
     thread_init(&sv->threads[i], pipefd[1], pipefd[0]);
   }
 }
@@ -68,6 +70,7 @@ inline static void init_connection(sample_kv *sv, int sfd, size_t connection_max
   assert(sv->connections != NULL);
   sv->connection_max_size = connection_max_size;
   sv->listen = connection_new(sfd, listen_state,  EV_READ | EV_PERSIST, sv->main_base,sv);
+  log_info("init global connections success");
 }
 int main(int argc, char *argv[])
 {
