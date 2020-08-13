@@ -8,6 +8,7 @@
 #ifndef _SAMPLE_KV_H
 #define _SAMPLE_KV_H
 #include "connection.h"
+#include "hash_list.h"
 #include "thread.h"
 #include "utils.h"
 typedef struct sample_kv_t
@@ -16,7 +17,7 @@ typedef struct sample_kv_t
   size_t thread_size;
   thread *threads;
   connection *listen;
-  connection **connections;
+  hash_list  *connections;
   size_t connection_max_size;
 } sample_kv;
 #endif

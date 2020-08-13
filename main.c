@@ -60,7 +60,10 @@ inline static void init_worker_thread(sample_kv *sv, size_t thread_size)
 
 inline static void init_connection(sample_kv *sv, int sfd, size_t connection_max_size)
 {
-  sv->connections = (connection **)calloc(connection_max_size, sizeof(connection *));
+
+  //sv->connections = (connection **)calloc(connection_max_size, sizeof(connection *));
+  sv->connections = hash_list_alloc(16384);
+
   assert(sv->connections != NULL);
   sv->connection_max_size = connection_max_size;
   sv->listen = connection_new(sfd, listen_state,  EV_READ | EV_PERSIST, sv->main_base,sv);

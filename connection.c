@@ -125,7 +125,6 @@ static void connection_do_request(connection *c)
         continue;
       }
       dispatch_connection(sfd, parse_cmd_state, EV_READ | EV_PERSIST, c->ctx);
-
       stop = true;
       break;
     case parse_cmd_state:
@@ -147,20 +146,19 @@ static void connection_event_handler(const int fd, const short which, void *arg)
     return;
   }
   connection_do_request(c);
-  return;
 }
 connection *connection_new(int sfd, state state, const int event_flags, struct event_base *base, void *ctx)
 {
   sample_kv *sv = (sample_kv *)ctx;
-  connection *con = sv->connections[sfd];
-  if (sv->connections[sfd] == NULL)
+  connection *con = (connection *)hash_list_search(sv->connections,sfd);
+  if (con == NULL)
   {
     con = (connection *)calloc(1, sizeof(connection));
     assert(con != NULL);
     con->sfd = sfd;
     con->state = state;
     con->ctx = ctx;
-    sv->connections[sfd] = con;
+    hash_list_insert(sv->connections,sfd,con);
   }
   event_set(&con->event, sfd, event_flags, connection_event_handler, (void *)con);
   event_base_set(base, &con->event);
