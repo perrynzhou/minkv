@@ -22,7 +22,6 @@ typedef struct connection_t
   void *ctx;
 } connection;
 connection *connection_new(int sfd, state state, const int event_flags,struct event_base *base, void *ctx);
-void connection_set_state(connection *c,int state);
 void connection_free(connection *con);
 void connection_execute_cmd(connection *c);
 #endif

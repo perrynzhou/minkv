@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <unistd.h>
+#include <string.h>
 #include <event2/event_compat.h>
 static void connection_event_handler(const int fd, const short which, void *arg);
 static bool connection_update_event(connection *c, const int new_flags);
@@ -38,9 +39,7 @@ void connection_handle_close_cmd(connection *c)
 }
 void connection_execute_cmd(connection *c)
 {
-  write(c->sfd, "success", 7);
-  c->state = wait_cmd_state;
-  connection_update_event(c,EV_WRITE | EV_PERSIST);
+  write(c->sfd, "success\n", 8);
   switch (c->state)
   {
   case put_cmd_state:
@@ -56,6 +55,7 @@ void connection_execute_cmd(connection *c)
     connection_handle_close_cmd(c);
     break;
   }
+  //c->state = wait_cmd_state;
 }
 
 static bool connection_update_event(connection *c, const int new_flags)
@@ -93,7 +93,7 @@ static void dispatch_connection(int sfd, int init_state, int event_flags, void *
     return;
   }
   int tid = hash_jump_consistent(sfd, sv->thread_size);
-
+  log_info("choose thread %d", tid);
   thread *thd = &sv->threads[tid];
   //把item放到某个线程的连接队列中
   queue_push(thd->new_connection_queue, item);
@@ -115,7 +115,7 @@ static void connection_do_request(connection *c)
   const char *str;
 
   assert(c != NULL);
-
+  log_info("trigge a event");
   while (!stop)
   {
 
@@ -133,9 +133,10 @@ static void connection_do_request(connection *c)
       break;
     case parse_cmd_state:
       connection_execute_cmd(c);
-      break;
-    case wait_cmd_state:
-      c->state = parse_cmd_state;
+      if (connection_update_event(c, EV_READ | EV_PERSIST))
+      {
+        stop = true;
+      }
       break;
     }
   }
@@ -152,6 +153,7 @@ static void connection_event_handler(const int fd, const short which, void *arg)
     fprintf(stderr, "catastrophic: event fd doesn't match connection fd!\n");
     return;
   }
+  //log_info("handle one event fd=%d", c->sfd);
   connection_do_request(c);
 }
 connection *connection_new(int sfd, state state, const int event_flags, struct event_base *base, void *ctx)

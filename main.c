@@ -57,7 +57,7 @@ inline static void init_worker_thread(sample_kv *sv, size_t thread_size)
       exit(-1);
     }
     log_info("init thread %d",i);
-    thread_init(&sv->threads[i], pipefd[1], pipefd[0]);
+    thread_init(&sv->threads[i], pipefd[1], pipefd[0],sv);
   }
 }
 

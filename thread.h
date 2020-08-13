@@ -8,6 +8,7 @@
 #ifndef _THREAD_H
 #define _THREAD_H
 #include "queue.h"
+#include "hash_list.h"
 #include <event2/event.h>
 #include <event2/event-config.h>
 #include <event2/event_struct.h>
@@ -21,6 +22,6 @@ typedef struct thread_t
   queue *new_connection_queue; /* queue of new connections to handle */
   void *ctx;
 } thread;
-int thread_init(thread *thd,int notify_send_fd,int notify_receive_fd);
+int thread_init(thread *thd,int notify_send_fd,int notify_receive_fd,void *ctx);
 void *thread_start(void *arg);
 #endif
