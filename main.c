@@ -6,6 +6,7 @@
  ************************************************************************/
 
 #include "sample_kv.h"
+#include "log.h"
 #include "utils.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,6 +71,7 @@ inline static void init_connection(sample_kv *sv, int sfd, size_t connection_max
 }
 int main(int argc, char *argv[])
 {
+  log_init(LOG_STDOUT_TYPE,NULL);
   sample_kv *sv = (sample_kv *)calloc(1, sizeof(sample_kv));
   int sock = init_tcp_sock(argv[1], atoi(argv[2]));
   if (sock != -1)

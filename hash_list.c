@@ -6,6 +6,7 @@
  ************************************************************************/
 
 #include "hash_list.h"
+#include "hashfn.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,7 +80,6 @@ void *hash_list_search(hash_list *list, uint32_t key)
     while (cur != NULL)
     {
       hash_list_node *next = cur->next;
-      char *v = (char *)cur->key;
       if (cur->key == key)
       {
         data = cur->data;
@@ -92,46 +92,44 @@ void *hash_list_search(hash_list *list, uint32_t key)
 }
 void *hash_list_remove(hash_list *list, uint32_t key)
 {
-  if (list == NULL || key == NULL)
-  {
-    return NULL;
-  }
   void *data = NULL;
-  uint64_t index = hash_jump_consistent(key, list->max_size);
-  if (list->arrays[index] == NULL)
-  {
 
-    return NULL;
-  }
-  hash_list_node *cur = list->arrays[index];
-  hash_list_node *prev = NULL;
-  while (cur != NULL)
+  if (list != NULL)
   {
-    hash_list_node *next = cur->next;
-    char *v = (char *)cur->key;
-    if (cur->key == key)
+    uint64_t index = hash_jump_consistent(key, list->max_size);
+    if (list->arrays[index] != NULL)
     {
-      data = cur->data;
-      break;
+
+      hash_list_node *cur = list->arrays[index];
+      hash_list_node *prev = NULL;
+      while (cur != NULL)
+      {
+        hash_list_node *next = cur->next;
+        if (cur->key == key)
+        {
+          data = cur->data;
+          break;
+        }
+        else
+        {
+          prev = cur;
+        }
+        cur = next;
+      }
+      if (prev != NULL)
+      {
+        prev->next = cur->next;
+      }
+      else
+      {
+        list->arrays[index] = cur->next;
+      }
+      if (cur != NULL)
+      {
+        list->cur_size--;
+        hash_list_node_free(cur, false);
+      }
     }
-    else
-    {
-      prev = cur;
-    }
-    cur = next;
-  }
-  if (prev != NULL)
-  {
-    prev->next = cur->next;
-  }
-  else
-  {
-    list->arrays[index] = cur->next;
-  }
-  if (cur != NULL)
-  {
-    list->cur_size--;
-    hash_list_node_free(cur, false);
   }
   return data;
 }
