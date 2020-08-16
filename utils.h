@@ -16,5 +16,5 @@ typedef enum state_t {
     del_cmd_state,
     close_cmd_state
 }state;
-int init_tcp_sock(const char *addr,int port);
+int init_tcp_sock(int port);
 #endif

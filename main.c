@@ -1,103 +1,108 @@
 /*************************************************************************
-  > File Name: sample_kv.c
+  > File Name: main.c
   > Author:perrynzhou 
   > Mail:perrynzhou@gmail.com 
   > Created Time: 日  8/ 9 18:35:34 2020
  ************************************************************************/
 
-#include "sample_kv.h"
+#include "kv.h"
 #include "log.h"
+#include "thread.h"
 #include "utils.h"
+#include "hashfn.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
-#include <event2/event.h>
-static int stop_main_loop = 0;
-static void sig_handler(const int sig)
+#include <ev.h>
+#include <sys/types.h> /* See NOTES */
+#include <sys/socket.h>
+#include <netinet/in.h>
+static sample_kv *sv = NULL;
+static void start_thread(thread *thd);
+void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
-  stop_main_loop = 1;
+  struct sockaddr_in client_addr;
+  socklen_t client_len = sizeof(client_addr);
+  int cfd;
+
+  if (EV_ERROR & revents)
+  {
+    perror("got invalid event");
+    return;
+  }
+  // Accept client request
+  cfd = accept(watcher->fd, (struct sockaddr *)&client_addr, &client_len);
+  thread_ev_io *client = (thread_ev_io *)calloc(1, sizeof(thread_ev_io));
+
+  if (cfd < 0)
+  {
+    perror("accept error");
+    return;
+  }
+  fprintf(stdout, "accept a new connection\n");
+  struct linger so_linger;
+  so_linger.l_onoff = 1;
+  so_linger.l_linger = 0;
+  setsockopt(cfd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
+  int tid = hash_jump_consistent(cfd, sv->thread_size);
+  thread *thd = &sv->threads[tid];
+  client->ctx = thd;
+
+  if (thd->status == 0)
+  {
+    log_info("recovery a new thread running");
+    start_thread(thd);
+  }
+  log_info("choose thread %ld to do client=%d", thd->thread_id, cfd);
+  __sync_fetch_and_add(&thd->connections, 1);
+  // Initialize and start watcher to read client requests
+  ev_io_init(&client->watcher, thread_read_cb, cfd, EV_READ);
+  ev_io_start(thd->loop, &client->watcher);
 }
-static void start_worker_thread(sample_kv *sv)
+static void start_thread(thread *thd)
 {
   int ret = 0;
-  //启动每个工作线程，在这里每个线程执行event_base_loop
-  for (int i = 0; i < sv->thread_size; i++)
+  thd->status = 1;
+  if ((ret = pthread_create(&thd->thread_id, NULL, thread_func, thd)) != 0)
   {
-    if ((ret=pthread_create(&sv->threads[i].thread_id, NULL, thread_start, &sv->threads[i])) != 0)
-    {
-      fprintf(stderr, "can't create thread: %s\n", strerror(ret));
-      exit(1);
-    }
+    fprintf(stderr, "can't create thread: %s\n", strerror(ret));
+    exit(1);
   }
 }
-static void init_main_base(sample_kv *sv)
-{
-  struct event_config *ev_config;
-  ev_config = event_config_new();
-  event_config_set_flag(ev_config, EVENT_BASE_FLAG_NOLOCK);
-  sv->main_base = event_base_new_with_config(ev_config);
-  event_config_free(ev_config);
-  log_info("init main_base success");
-}
 
-inline static void init_worker_thread(sample_kv *sv, size_t thread_size)
+inline static void setup_thread(sample_kv *sv, size_t thread_size)
 {
   sv->threads = (thread *)calloc(thread_size, sizeof(thread));
   assert(sv->threads != NULL);
   sv->thread_size = thread_size;
   for (int i = 0; i < thread_size; i++)
   {
-    int pipefd[2];
-    if (pipe(pipefd) != 0)
-    {
-      perror("can't create pipe channel");
-      exit(-1);
-    }
-    log_info("init thread %d",i);
-    thread_init(&sv->threads[i], pipefd[1], pipefd[0],sv);
+    thread_init(&sv->threads[i], i, sv);
   }
 }
 
-inline static void init_connection(sample_kv *sv, int sfd, size_t connection_max_size)
+static void sample_kv_init(const char *addr, int port, size_t thread_size)
 {
-
-  //sv->connections = (connection **)calloc(connection_max_size, sizeof(connection *));
-  sv->connections = hash_list_alloc(16384);
-
-  assert(sv->connections != NULL);
-  sv->connection_max_size = connection_max_size;
-  sv->listen = connection_new(sfd, listen_state,  EV_READ | EV_PERSIST, sv->main_base,sv);
-  log_info("init global connections success");
+  if (sv == NULL)
+  {
+    sv = (sample_kv *)calloc(1, sizeof(sample_kv));
+  }
+  assert(sv != NULL);
+  sv->sfd = init_tcp_sock(port);
+  sv->loop = ev_default_loop(EVBACKEND_EPOLL);
+  struct ev_io w_accept;
+  ev_io_init(&w_accept, accept_cb, sv->sfd, EV_READ);
+  ev_io_start(sv->loop, &w_accept);
+  log_info("init sample_kv success");
+  setup_thread(sv, thread_size);
+  ev_run(sv->loop, 0);
 }
 int main(int argc, char *argv[])
 {
-  log_init(LOG_STDOUT_TYPE,NULL);
-  sample_kv *sv = (sample_kv *)calloc(1, sizeof(sample_kv));
-  int sock = init_tcp_sock(argv[1], atoi(argv[2]));
-  if (sock != -1)
-  {
-    init_main_base(sv);
-    init_connection(sv, sock, 8192);
-    init_worker_thread(sv, 10);
-  }
-  signal(SIGINT, sig_handler);
-  signal(SIGTERM, sig_handler);
-  start_worker_thread(sv);
-  /* enter the event loop */
-  while (!stop_main_loop)
-  {
-    if (event_base_loop(sv->main_base, EVLOOP_ONCE) != 0)
-    {
-      break;
-    }
-  }
-  event_base_free(sv->main_base);
-  if (sv != NULL)
-  {
-    free(sv);
-  }
+  log_init(LOG_STDOUT_TYPE, NULL);
+  sample_kv_init(argv[1], atoi(argv[2]), 4);
   return 0;
 }
