@@ -7,11 +7,12 @@
 
 #ifndef _QUEUE_ITEM_H
 #define _QUEUE_ITEM_H
+#include <stdint.h>
 typedef struct queue_item_t
 {
-  void *data;
   struct queue_item_t *next;
+  uint8_t data[0];
 } queue_item;
-queue_item *queue_item_create(int sfd, int state, int event_flags, void *ctx);
+queue_item *queue_item_create(size_t data_size);
 void queue_item_free(queue_item *item);
 #endif
