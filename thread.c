@@ -7,6 +7,7 @@
 #include "kv.h"
 #include "log.h"
 #include "thread.h"
+#include "thread_ev_io.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -27,6 +28,10 @@ void thread_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 
   if (read == 0)
   {
+    if(watcher_->fd!=-1)
+    {
+      close(watcher_->fd);
+    }
     // Stop and free watchet if client socket is closing
     ev_io_stop(loop, watcher_);
     free(teo);

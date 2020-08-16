@@ -18,10 +18,7 @@ typedef struct thread_t
   uint64_t connections;
   void *ctx;
 } thread;
-typedef struct thread_ev_io_t {
-  struct ev_io watcher;
-  void *ctx;
-}thread_ev_io;
+
 int thread_init(thread *thd,int id,void *ctx);
 void thread_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 void *thread_func(void *arg);
