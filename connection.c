@@ -17,10 +17,11 @@
 #include <assert.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h>
 #include <event2/event_compat.h>
 static void connection_event_handler(const int fd, const short which, void *arg);
 static bool connection_update_event(connection *c, const int new_flags);
-static void connection_do_request(connection *c);
+static void handle_machine(connection *c);
 //parse command
 void connection_handle_parse_cmd(connection *c)
 {
@@ -104,7 +105,7 @@ static void dispatch_connection(int sfd, int init_state, int event_flags, void *
     perror("Writing to thread notify pipe");
   }
 }
-static void connection_do_request(connection *c)
+static void handle_machine(connection *c)
 {
   bool stop = false;
   int sfd;
@@ -126,6 +127,11 @@ static void connection_do_request(connection *c)
       if (sfd == -1)
       {
         continue;
+      }
+      if (fcntl(sfd, F_SETFL, fcntl(sfd, F_GETFL) | O_NONBLOCK) < 0)
+      {
+        perror("fcntl");
+        break;
       }
       dispatch_connection(sfd, parse_cmd_state, EV_READ | EV_PERSIST, c->ctx);
       stop = true;
@@ -151,7 +157,7 @@ static void connection_event_handler(const int fd, const short which, void *arg)
     return;
   }
   //log_info("handle one event fd=%d", c->sfd);
-  connection_do_request(c);
+  handle_machine(c);
 }
 connection *connection_new(int sfd, state state, const int event_flags, struct event_base *base, void *ctx)
 {
