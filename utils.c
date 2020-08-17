@@ -16,7 +16,7 @@
 #include <unistd.h>
 #include <strings.h>
 #include <netinet/in.h>
-int init_tcp_sock(int port,int backlog)
+int init_tcp_sock(int port, int backlog)
 {
   int sfd;
   struct sockaddr_in addr;
@@ -48,7 +48,7 @@ int init_tcp_sock(int port,int backlog)
   }
   return sfd;
 }
-int set_tcp_so_linger(int fd,int onoff,int linger)
+int set_tcp_so_linger(int fd, int onoff, int linger)
 {
   struct linger so_linger;
   so_linger.l_onoff = onoff;

@@ -75,14 +75,14 @@ void *queue_pop(queue *q)
 }
 void queue_cleanall(queue *q)
 {
-  if(q !=NULL)
+  if (q != NULL)
   {
-     for(size_t i=0;i<q->size;i++)
+    for (size_t i = 0; i < q->size; i++)
     {
       queue_pop(q);
     }
     q->head = q->tail = NULL;
-    q->size=0;
+    q->size = 0;
   }
 }
 void queue_destroy(queue *q)
@@ -90,7 +90,7 @@ void queue_destroy(queue *q)
   if (q != NULL)
   {
     pthread_mutex_destroy(&q->lock);
-     queue_cleanall(q);
+    queue_cleanall(q);
     free(q);
     q = NULL;
   }
