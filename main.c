@@ -59,15 +59,15 @@ void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
   thread_ev_io *client = (thread_ev_io *)queue_pop(thd->free_q);
   if (client == NULL)
   {
-    thread_ev_io_create(thd);
+   client= thread_ev_io_create(thd);
   }
   if (thd->status == 0)
   {
-    log_info("recovery  thread  %d running",thd->id);
+    log_info("recovery  thread-%d running",thd->id);
     start_thread(thd);
   }
   hash_list_insert(thd->used_l, cfd, client);
-  log_info("dispatch request fd=%d to  thread %d", cfd,thd->id);
+  log_info("dispatch request fd=%d to  thread-%d", cfd,thd->id);
   __sync_fetch_and_add(&thd->connections, 1);
   ev_io_init(&client->watcher, thread_read_cb, cfd, EV_READ);
   ev_io_start(thd->loop, &client->watcher);
@@ -124,14 +124,21 @@ static void sample_kv_destroy(sample_kv *sv) {
       hash_list_data_free_cb free_cb = (hash_list_data_free_cb)&thread_ev_io_destroy;
       queue_destroy(sv->threads[i].free_q);
       hash_list_destroy(sv->threads[i].used_l,free_cb);
+      log_info("deinit thread-%d",i);
     }
     free(sv->threads);
+    log_info("sample_kv exit success");
   }
+}
+inline static  void sample_exit(int sig)     
+{
+  sample_kv_destroy(g_sv);
+  _exit(0);
 }
 int main(int argc, char *argv[])
 {
   log_init(LOG_STDOUT_TYPE, NULL);
-  sample_kv *sv = sample_kv_create(argv[1], atoi(argv[2]), 2);
-  sample_kv_destroy(sv);
+  signal(SIGINT, sample_exit);
+  sample_kv *sv = sample_kv_create(argv[1], atoi(argv[2]), 1);
   return 0;
 }

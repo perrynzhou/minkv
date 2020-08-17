@@ -58,15 +58,17 @@ int thread_init(thread *thd, int id, void *ctx)
   thd->status = 0;
   thd->used_l = hash_list_create(16384);
   thd->free_q = queue_create();
-  log_info("thread %d init ev_loop success", thd->id);
+  log_info("thread-%d init ev_loop success", thd->id);
 }
 void *thread_func(void *arg)
 {
+  pthread_t id = pthread_self();
   thread *thd = (thread *)arg;
-  log_info("thread %ld running ev_loop", pthread_self());
+  log_info("thread-%d-%ld running ev_loop",thd->id, id);
   pthread_detach(thd->thread_id);
   ev_run(thd->loop, 0);
   queue_cleanall(thd->free_q);
-  log_info("thread %ld stopping ev_loop", pthread_self());
+  pthread_exit(NULL);
+  log_info("thread-%d-%ld stopping ev_loop",thd->id, id);
   return NULL;
 }

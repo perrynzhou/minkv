@@ -18,7 +18,6 @@ void thread_ev_io_destroy(thread_ev_io *tev)
 {
   if(tev!=NULL)
   {
-       
     free(tev);
     tev=NULL;
   }
