@@ -7,6 +7,8 @@
 
 #ifndef _THREAD_H
 #define _THREAD_H
+#include "queue.h"
+#include "hash_list.h"
 #include <ev.h>
 #include <stdint.h>
 typedef struct thread_t
@@ -17,6 +19,8 @@ typedef struct thread_t
   int status;
   uint64_t connections;
   void *ctx;
+  hash_list *used_l;
+  queue   *free_q;
 } thread;
 
 int thread_init(thread *thd,int id,void *ctx);

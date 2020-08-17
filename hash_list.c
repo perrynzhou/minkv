@@ -61,7 +61,7 @@ int hash_list_insert(hash_list *list, uint32_t key, void *item)
   prev->next = node;
   return ret;
 }
-hash_list *hash_list_alloc(size_t max_size)
+hash_list *hash_list_create(size_t max_size)
 {
   hash_list *lt = (hash_list *)calloc(1, sizeof(*lt));
   lt->max_size = max_size;
@@ -149,7 +149,7 @@ void hash_list_traverse(hash_list *list, hash_list_traverse_cb cb, void *ctx)
     }
   }
 }
-void hash_list_free(hash_list *list, hash_list_data_free_cb free_cb)
+void hash_list_destroy(hash_list *list, hash_list_data_free_cb free_cb)
 {
   if (list != NULL)
   {

@@ -8,14 +8,21 @@
 #ifndef _QUEUE_H
 #define _QUEUE_H
 #include <pthread.h>
-#include "queue_item.h"
+#include <stdint.h>
+typedef struct queue_item_t
+{
+  struct queue_item_t *next;
+  void *data;
+} queue_item;
 typedef struct queue_t {
     queue_item *head;
     queue_item *tail;
+    uint64_t     size;
     pthread_mutex_t lock;
 }queue;
 queue *queue_create();
-void queue_push(queue *q,void *item);
+int  queue_push(queue *q,void *data);
 void *queue_pop(queue *q);
-void queue_free(queue *q);
+void queue_destroy(queue *q);
+void queue_cleanall(queue *q);
 #endif

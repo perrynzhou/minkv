@@ -16,5 +16,6 @@ typedef struct sample_kv_t
   size_t thread_size;
   thread *threads;
   int   sfd;
+  void *ctx;
 } sample_kv;
 #endif

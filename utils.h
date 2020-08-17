@@ -16,5 +16,6 @@ typedef enum state_t {
     del_cmd_state,
     close_cmd_state
 }state;
-int init_tcp_sock(int port);
+int init_tcp_sock(int port,int backlog);
+int set_tcp_so_linger(int fd,int onoff,int linger);
 #endif

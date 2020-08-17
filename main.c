@@ -21,8 +21,12 @@
 #include <sys/types.h> /* See NOTES */
 #include <sys/socket.h>
 #include <netinet/in.h>
-static sample_kv *sv = NULL;
 static void start_thread(thread *thd);
+static sample_kv *g_sv = NULL;
+typedef struct  main_ev_io_t{
+  struct ev_io watcher;
+  void  *ctx;
+}main_ev_io;
 void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
   struct sockaddr_in client_addr;
@@ -34,32 +38,37 @@ void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
     perror("got invalid event");
     return;
   }
+
+  main_ev_io *mev = (main_ev_io *)watcher;
+  struct ev_io *watcher_ = &mev->watcher;
   // Accept client request
-  cfd = accept(watcher->fd, (struct sockaddr *)&client_addr, &client_len);
-  thread_ev_io *client = (thread_ev_io *)calloc(1, sizeof(thread_ev_io));
+  cfd = accept(watcher_->fd, (struct sockaddr *)&client_addr, &client_len);
 
   if (cfd < 0)
   {
     perror("accept error");
     return;
   }
-  fprintf(stdout, "accept a new connection\n");
-  struct linger so_linger;
-  so_linger.l_onoff = 1;
-  so_linger.l_linger = 0;
-  setsockopt(cfd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
+  log_info("main thread %ld accept a new connection",pthread_self());
+
+  set_tcp_so_linger(cfd,1,0);
+
+  sample_kv *sv = (sample_kv *)mev->ctx;
   int tid = hash_jump_consistent(cfd, sv->thread_size);
   thread *thd = &sv->threads[tid];
-  client->ctx = thd;
-
+  thread_ev_io *client = (thread_ev_io *)queue_pop(thd->free_q);
+  if (client == NULL)
+  {
+    thread_ev_io_create(thd);
+  }
   if (thd->status == 0)
   {
-    log_info("recovery a new thread running");
+    log_info("recovery  thread  %d running",thd->id);
     start_thread(thd);
   }
-  log_info("choose thread %d to do client=%d", thd->id, cfd);
+  hash_list_insert(thd->used_l, cfd, client);
+  log_info("dispatch request fd=%d to  thread %d", cfd,thd->id);
   __sync_fetch_and_add(&thd->connections, 1);
-  // Initialize and start watcher to read client requests
   ev_io_init(&client->watcher, thread_read_cb, cfd, EV_READ);
   ev_io_start(thd->loop, &client->watcher);
 }
@@ -85,25 +94,44 @@ inline static void setup_thread(sample_kv *sv, size_t thread_size)
   }
 }
 
-static void sample_kv_init(const char *addr, int port, size_t thread_size)
+static sample_kv *sample_kv_create(const char *addr, int port, size_t thread_size)
 {
-  if (sv == NULL)
-  {
-    sv = (sample_kv *)calloc(1, sizeof(sample_kv));
+
+ sample_kv *sv = (sample_kv *)calloc(1, sizeof(sample_kv));
+  if(g_sv == NULL) {
+    g_sv = sv;
   }
   assert(sv != NULL);
-  sv->sfd = init_tcp_sock(port);
+  sv->sfd = init_tcp_sock(port,1024);
   sv->loop = ev_default_loop(EVBACKEND_EPOLL);
-  struct ev_io w_accept;
-  ev_io_init(&w_accept, accept_cb, sv->sfd, EV_READ);
-  ev_io_start(sv->loop, &w_accept);
+  main_ev_io *mev = (main_ev_io *)calloc(1,sizeof(main_ev_io));
+  sv->ctx = mev;
+  mev->ctx = sv;
+  ev_io_init(&mev->watcher, accept_cb, sv->sfd, EV_READ);
+  ev_io_start(sv->loop, &mev->watcher);
   log_info("init sample_kv success");
   setup_thread(sv, thread_size);
   ev_run(sv->loop, 0);
 }
+static void sample_kv_destroy(sample_kv *sv) {
+  if(sv !=NULL)
+  {
+    ev_break(sv->loop, EVBREAK_ALL);
+    main_ev_io *mev = (main_ev_io *)sv->ctx;
+    ev_io_stop(sv->loop,&mev->watcher);
+    for(size_t i=0;i<sv->thread_size;i++)
+    {
+      hash_list_data_free_cb free_cb = (hash_list_data_free_cb)&thread_ev_io_destroy;
+      queue_destroy(sv->threads[i].free_q);
+      hash_list_destroy(sv->threads[i].used_l,free_cb);
+    }
+    free(sv->threads);
+  }
+}
 int main(int argc, char *argv[])
 {
   log_init(LOG_STDOUT_TYPE, NULL);
-  sample_kv_init(argv[1], atoi(argv[2]), 2);
+  sample_kv *sv = sample_kv_create(argv[1], atoi(argv[2]), 2);
+  sample_kv_destroy(sv);
   return 0;
 }

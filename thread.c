@@ -18,9 +18,9 @@
 void thread_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
   char buffer[4096] = {'\0'};
-  thread_ev_io *teo = (thread_ev_io *)watcher;
-  struct ev_io *watcher_ = &teo->watcher;
-  thread *thd = (thread *)teo->ctx;
+  thread_ev_io *tev = (thread_ev_io *)watcher;
+  struct ev_io *watcher_ = &tev->watcher;
+  thread *thd = (thread *)tev->ctx;
   size_t read = recv(watcher_->fd, buffer, 4096, 0);
   if (read < 0)
   {
@@ -36,21 +36,17 @@ void thread_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
     }
     // Stop and free watchet if client socket is closing
     ev_io_stop(loop, watcher_);
-    free(teo);
+    queue_push(thd->free_q,tev);
     __sync_fetch_and_sub(&thd->connections, 1);
-    log_info("stop watcher,thread connections=%d", thd->connections);
+    log_info("stop watcher,thread %d conns=%d", thd->id,thd->connections);
     if (thd->connections == 0)
     {
       ev_break(loop, EVBREAK_ALL);
-      log_info("notify thread %ld stop,ret=%d", thd->id);
       thd->status = 0;
     }
     return;
   }
-  else
-  {
-    log_info("thread %ld  recv:%s", thd->id, (char *)&buffer);
-  }
+  log_info("thread %ld  recv:%s", thd->id, (char *)&buffer);
   bzero(&buffer, read);
 }
 
@@ -60,6 +56,8 @@ int thread_init(thread *thd, int id, void *ctx)
   thd->ctx = ctx;
   thd->id = id;
   thd->status = 0;
+  thd->used_l = hash_list_create(16384);
+  thd->free_q = queue_create();
   log_info("thread %d init ev_loop success", thd->id);
 }
 void *thread_func(void *arg)
@@ -68,6 +66,7 @@ void *thread_func(void *arg)
   log_info("thread %ld running ev_loop", pthread_self());
   pthread_detach(thd->thread_id);
   ev_run(thd->loop, 0);
+  queue_cleanall(thd->free_q);
   log_info("thread %ld stopping ev_loop", pthread_self());
   return NULL;
 }
