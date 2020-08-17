@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <unistd.h>
+#include <strings.h>
 static int init_socket(int domain, int type, int protocol, int backlog,
                        const char *addr, int port)
 {

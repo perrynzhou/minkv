@@ -10,6 +10,7 @@
 #include "thread.h"
 #include "utils.h"
 #include "hashfn.h"
+#include "thread_ev_io.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -56,7 +57,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
     log_info("recovery a new thread running");
     start_thread(thd);
   }
-  log_info("choose thread %ld to do client=%d", thd->thread_id, cfd);
+  log_info("choose thread %d to do client=%d", thd->id, cfd);
   __sync_fetch_and_add(&thd->connections, 1);
   // Initialize and start watcher to read client requests
   ev_io_init(&client->watcher, thread_read_cb, cfd, EV_READ);
@@ -103,6 +104,6 @@ static void sample_kv_init(const char *addr, int port, size_t thread_size)
 int main(int argc, char *argv[])
 {
   log_init(LOG_STDOUT_TYPE, NULL);
-  sample_kv_init(argv[1], atoi(argv[2]), 4);
+  sample_kv_init(argv[1], atoi(argv[2]), 2);
   return 0;
 }

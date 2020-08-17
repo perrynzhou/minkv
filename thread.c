@@ -13,12 +13,14 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <ev.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 void thread_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
   char buffer[4096] = {'\0'};
   thread_ev_io *teo = (thread_ev_io *)watcher;
   struct ev_io *watcher_ = &teo->watcher;
-  thread *thd =(thread *)teo->ctx;
+  thread *thd = (thread *)teo->ctx;
   size_t read = recv(watcher_->fd, buffer, 4096, 0);
   if (read < 0)
   {
@@ -28,25 +30,26 @@ void thread_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 
   if (read == 0)
   {
-    if(watcher_->fd!=-1)
+    if (watcher_->fd != -1)
     {
       close(watcher_->fd);
     }
     // Stop and free watchet if client socket is closing
     ev_io_stop(loop, watcher_);
     free(teo);
-    __sync_fetch_and_sub(&thd->connections,1);
-    log_info("stop watcher,thread connections=%d",thd->connections);
-    if(thd->connections==0) {
-      ev_break(loop,EVBREAK_ALL);
-      log_info("====notify thread %ld stop,ret=%d",thd->thread_id);
-      thd->status=0;
+    __sync_fetch_and_sub(&thd->connections, 1);
+    log_info("stop watcher,thread connections=%d", thd->connections);
+    if (thd->connections == 0)
+    {
+      ev_break(loop, EVBREAK_ALL);
+      log_info("notify thread %ld stop,ret=%d", thd->id);
+      thd->status = 0;
     }
     return;
   }
   else
   {
-    log_info("thread %ld  recv:%s", pthread_self(), (char *)&buffer);
+    log_info("thread %ld  recv:%s", thd->id, (char *)&buffer);
   }
   bzero(&buffer, read);
 }

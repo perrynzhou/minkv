@@ -7,6 +7,7 @@
 
 #ifndef _THREAD_EV_IO_H
 #define _THREAD_EV_IO_H
+#include <ev.h>
 typedef struct thread_ev_io_t {
   struct ev_io watcher;
   void *ctx;
