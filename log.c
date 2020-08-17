@@ -561,7 +561,7 @@ void _log(const char *file, int line, int level, const char *fmt, ...)
         {
             l->nerror++;
         }
-
+        fsync(l->fd);
         errno = errno_save;
 
         if (level == LOG_FATAL)

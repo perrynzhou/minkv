@@ -2,20 +2,28 @@
   > File Name: queue.h
   > Author:perrynzhou 
   > Mail:perrynzhou@gmail.com 
-  > Created Time: Sat 08 Aug 2020 06:37:41 PM CST
+  > Created Time: 日  8/16 23:25:31 2020
  ************************************************************************/
 
 #ifndef _QUEUE_H
 #define _QUEUE_H
-#include "queue_item.h"
 #include <pthread.h>
-typedef struct queue_t {
-    queue_item *head;
-    queue_item *tail;
-    pthread_mutex_t lock;
-}queue;
+#include <stdint.h>
+typedef struct queue_item_t
+{
+  struct queue_item_t *next;
+  void *data;
+} queue_item;
+typedef struct queue_t
+{
+  queue_item *head;
+  queue_item *tail;
+  uint64_t size;
+  pthread_mutex_t lock;
+} queue;
 queue *queue_create();
-void queue_push(queue *q,void *item);
+int queue_push(queue *q, void *data);
 void *queue_pop(queue *q);
-void queue_free(queue *q);
+void queue_destroy(queue *q);
+void queue_cleanall(queue *q);
 #endif

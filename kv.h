@@ -1,23 +1,21 @@
 /*************************************************************************
-    > File Name: sample_kv.h
+    > File Name: kv.h
   > Author:perrynzhou 
   > Mail:perrynzhou@gmail.com 
   > Created Time: Tuesday, August 11, 2020 PM03:20:29
  ************************************************************************/
 
-#ifndef _SAMPLE_KV_H
-#define _SAMPLE_KV_H
-#include "connection.h"
+#ifndef _KV_H
+#define _KV_H
 #include "hash_list.h"
 #include "thread.h"
 #include "utils.h"
 typedef struct sample_kv_t
 {
-  struct event_base *main_base;
+  struct ev_loop *loop;
   size_t thread_size;
   thread *threads;
-  connection *listen;
-  hash_list  *connections;
-  size_t connection_max_size;
+  int   sfd;
+  void *ctx;
 } sample_kv;
 #endif

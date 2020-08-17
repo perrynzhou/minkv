@@ -14,39 +14,44 @@
 #include <netdb.h>
 #include <ifaddrs.h>
 #include <unistd.h>
-static int init_socket(int domain, int type, int protocol, int backlog,
-                       const char *addr, int port)
+#include <strings.h>
+#include <netinet/in.h>
+int init_tcp_sock(int port, int backlog)
 {
-  int sock = socket(domain, type, protocol);
-  if (sock != -1)
+  int sfd;
+  struct sockaddr_in addr;
+  int addr_len = sizeof(addr);
+
+  // Create server socket
+  if ((sfd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
   {
-    struct sockaddr_in serveraddr;
-    serveraddr.sin_family = domain;
-    serveraddr.sin_port = htons(port);
-    if (inet_pton(AF_INET, addr, &serveraddr.sin_addr) <= 0)
-    {
-      close(sock);
-      printf("inet_pton error for %s\n", addr);
-      return -1;
-    }
-    bind(sock, (struct sockaddr *)&serveraddr, sizeof(serveraddr));
-    if (type == SOCK_STREAM)
-    {
-      int opt = 1;
-      setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-      // set_tcp_nonblock(sock);
-      listen(sock, backlog);
-      if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL) | O_NONBLOCK) < 0)
-      {
-        perror("setting O_NONBLOCK");
-        close(sock);
-        sock=-1;
-      }
-    }
+    perror("socket error");
+    return -1;
   }
-  return sock;
+
+  bzero(&addr, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = INADDR_ANY;
+
+  // Bind socket to address
+  if (bind(sfd, (struct sockaddr *)&addr, sizeof(addr)) != 0)
+  {
+    perror("bind error");
+  }
+
+  // Start listing on the socket
+  if (listen(sfd, backlog) < 0)
+  {
+    perror("listen error");
+    return -1;
+  }
+  return sfd;
 }
-int init_tcp_sock(const char *addr, int port)
+int set_tcp_so_linger(int fd, int onoff, int linger)
 {
-  return init_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP, 4096, addr, port);
+  struct linger so_linger;
+  so_linger.l_onoff = onoff;
+  so_linger.l_linger = linger;
+  return setsockopt(fd, SOL_SOCKET, SO_LINGER, &so_linger, sizeof so_linger);
 }

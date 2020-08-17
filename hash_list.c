@@ -17,7 +17,7 @@ typedef struct hash_list_node_t
   uint32_t key;
   void *data;
 } hash_list_node;
-static hash_list_node *hash_list_node_alloc(uint32_t key, void *data)
+static hash_list_node *hash_list_node_create(uint32_t key, void *data)
 {
   hash_list_node *n = (hash_list_node *)calloc(1, sizeof(*n));
   n->next = NULL;
@@ -25,7 +25,7 @@ static hash_list_node *hash_list_node_alloc(uint32_t key, void *data)
   n->key = key;
   return n;
 }
-static void hash_list_node_free(hash_list_node *node, bool flag)
+static void hash_list_node_destroy(hash_list_node *node, bool flag)
 {
   if (flag)
   {
@@ -37,31 +37,34 @@ static void hash_list_node_free(hash_list_node *node, bool flag)
 int hash_list_insert(hash_list *list, uint32_t key, void *item)
 {
   uint64_t index = hash_jump_consistent(key, list->max_size);
-  hash_list_node *node = hash_list_node_alloc(key, item);
+  hash_list_node *node = hash_list_node_create(key, item);
   if (list->arrays[index] == NULL)
   {
     list->cur_size++;
     list->arrays[index] = node;
     return 0;
   }
-  hash_list_node *cur = (hash_list_node *)list->arrays[index];
+  hash_list_node *first = (hash_list_node *)list->arrays[index];
+  hash_list_node *cur = first;
+
   hash_list_node *prev = NULL;
   int ret = 0;
   while (cur != NULL)
   {
     if (key == cur->key)
     {
+      hash_list_node_destroy(node, false);
       ret = -1;
       break;
     }
     cur = cur->next;
-    prev = cur;
   }
-  list->cur_size++;
-  prev->next = node;
-  return ret;
+  __sync_fetch_and_add(&list->cur_size, 1);
+  node->next = first;
+  list->arrays[index] = node;
+  return 0;
 }
-hash_list *hash_list_alloc(size_t max_size)
+hash_list *hash_list_create(size_t max_size)
 {
   hash_list *lt = (hash_list *)calloc(1, sizeof(*lt));
   lt->max_size = max_size;
@@ -75,7 +78,6 @@ void *hash_list_search(hash_list *list, uint32_t key)
   uint64_t index = hash_jump_consistent(key, list->max_size);
   if (list->arrays[index] != NULL)
   {
-
     hash_list_node *cur = list->arrays[index];
     while (cur != NULL)
     {
@@ -126,8 +128,8 @@ void *hash_list_remove(hash_list *list, uint32_t key)
       }
       if (cur != NULL)
       {
-        list->cur_size--;
-        hash_list_node_free(cur, false);
+        __sync_fetch_and_sub(&list->cur_size, 1);
+        hash_list_node_destroy(cur, false);
       }
     }
   }
@@ -149,7 +151,7 @@ void hash_list_traverse(hash_list *list, hash_list_traverse_cb cb, void *ctx)
     }
   }
 }
-void hash_list_free(hash_list *list, hash_list_data_free_cb free_cb)
+void hash_list_destroy(hash_list *list, hash_list_data_free_cb free_cb)
 {
   if (list != NULL)
   {
@@ -163,7 +165,7 @@ void hash_list_free(hash_list *list, hash_list_data_free_cb free_cb)
         {
           free_cb(cur->data);
         }
-        hash_list_node_free(cur, false);
+        hash_list_node_destroy(cur, false);
         cur = next;
         list->cur_size--;
       }
