@@ -12,10 +12,13 @@
 #include "utils.h"
 typedef struct min_kv_t
 {
+  //server socket fd
+  int sfd;
+  //save  main_ev_io struct,that is  used for accept
+  void *ctx;
   struct ev_loop *loop;
   size_t thread_size;
   thread *threads;
-  int   sfd;
-  void *ctx;
+  list *channels;
 } min_kv;
 #endif

@@ -106,7 +106,9 @@ static min_kv *min_kv_create(const char *addr, int port, size_t thread_size)
   assert(sv != NULL);
   sv->sfd = init_tcp_sock(port, 1024);
   sv->loop = ev_default_loop(EVBACKEND_EPOLL);
+  sv->channels = list_create(4096);
   main_ev_io *mev = (main_ev_io *)calloc(1, sizeof(main_ev_io));
+  assert(mev!=NULL);
   sv->ctx = mev;
   mev->ctx = sv;
   ev_io_init(&mev->watcher, accept_cb, sv->sfd, EV_READ);

@@ -9,6 +9,7 @@
 #define _THREAD_H
 #include "queue.h"
 #include "hash_list.h"
+#include "list.h"
 #include <ev.h>
 #include <stdint.h>
 typedef struct thread_t
