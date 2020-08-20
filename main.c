@@ -5,7 +5,7 @@
   > Created Time: 日  8/ 9 18:35:34 2020
  ************************************************************************/
 
-#include "kv.h"
+#include "min_kv.h"
 #include "log.h"
 #include "thread.h"
 #include "utils.h"
@@ -22,7 +22,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 static void start_thread(thread *thd);
-static sample_kv *g_sv = NULL;
+static min_kv *g_sv = NULL;
 typedef struct main_ev_io_t
 {
   struct ev_io watcher;
@@ -54,7 +54,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 
   set_tcp_so_linger(cfd, 1, 0);
 
-  sample_kv *sv = (sample_kv *)mev->ctx;
+  min_kv *sv = (min_kv *)mev->ctx;
   int tid = hash_jump_consistent(cfd, sv->thread_size);
   thread *thd = &sv->threads[tid];
   thread_ev_io *client = (thread_ev_io *)queue_pop(thd->free_q);
@@ -84,7 +84,7 @@ static void start_thread(thread *thd)
   }
 }
 
-inline static void setup_thread(sample_kv *sv, size_t thread_size)
+inline static void setup_thread(min_kv *sv, size_t thread_size)
 {
   sv->threads = (thread *)calloc(thread_size, sizeof(thread));
   assert(sv->threads != NULL);
@@ -95,10 +95,10 @@ inline static void setup_thread(sample_kv *sv, size_t thread_size)
   }
 }
 
-static sample_kv *sample_kv_create(const char *addr, int port, size_t thread_size)
+static min_kv *min_kv_create(const char *addr, int port, size_t thread_size)
 {
 
-  sample_kv *sv = (sample_kv *)calloc(1, sizeof(sample_kv));
+  min_kv *sv = (min_kv *)calloc(1, sizeof(min_kv));
   if (g_sv == NULL)
   {
     g_sv = sv;
@@ -111,11 +111,11 @@ static sample_kv *sample_kv_create(const char *addr, int port, size_t thread_siz
   mev->ctx = sv;
   ev_io_init(&mev->watcher, accept_cb, sv->sfd, EV_READ);
   ev_io_start(sv->loop, &mev->watcher);
-  log_info("init sample_kv success");
+  log_info("init min_kv success");
   setup_thread(sv, thread_size);
   ev_run(sv->loop, 0);
 }
-static void sample_kv_destroy(sample_kv *sv)
+static void min_kv_destroy(min_kv *sv)
 {
   if (sv != NULL)
   {
@@ -130,18 +130,18 @@ static void sample_kv_destroy(sample_kv *sv)
       log_info("deinit thread-%d", i);
     }
     free(sv->threads);
-    log_info("sample_kv exit success");
+    log_info("min_kv exit success");
   }
 }
 inline static void sample_exit(int sig)
 {
-  sample_kv_destroy(g_sv);
+  min_kv_destroy(g_sv);
   _exit(0);
 }
 int main(int argc, char *argv[])
 {
   log_init(LOG_STDOUT_TYPE, NULL);
   signal(SIGINT, sample_exit);
-  sample_kv *sv = sample_kv_create(argv[1], atoi(argv[2]), 1);
+  min_kv *sv = min_kv_create(argv[1], atoi(argv[2]), 1);
   return 0;
 }
