@@ -18,7 +18,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <ev.h>
-#include <sys/types.h> /* See NOTES */
+#include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
 static void start_thread(thread *thd);

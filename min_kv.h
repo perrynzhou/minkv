@@ -19,6 +19,7 @@ typedef struct min_kv_t
   struct ev_loop *loop;
   size_t thread_size;
   thread *threads;
+  //min_kv can create multi channels
   list *channels;
 } min_kv;
 #endif

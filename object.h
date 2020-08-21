@@ -12,7 +12,8 @@ typedef enum object_type_t
 {
   OBJECT_LIST = 0,
   OBJECT_STRING,
-  OBJECT_HASHTABLE
+  OBJECT_HASHTABLE,
+  OBJECT_SKIPLIST,
 } object_type;
 typedef struct object_t
 {
