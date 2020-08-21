@@ -23,26 +23,7 @@ inline static int channel_clsbit(channel *c, int n)
 {
   return c->fd_set[n >> SHIFT] & (1 << (n & MASK));
 }
-void *channel_expire_ticker(void *arg)
-{
-  channel *c = (channel *)arg;
-  struct timeval tv;
- tv.tv_sec = 0;
- tv.tv_usec = 200000; /* 0.2 秒*/
- pthread_detach(c->tid);
-  for(;;)
-  {
-    if(c->done) {
-      log_info("stop channel ticker\n");
-      break;
-    }
-    select(0, NULL, NULL, NULL, &tv);
-    //access skiplist from max_level,and expire key
-    //todo
-  }
-  pthread_exit(NULL);
-  return NULL;
-}
+
 channel *channel_create(const char *name,void *ctx)
 {
   channel *c = (channel *)calloc(1, sizeof(channel));
@@ -56,10 +37,9 @@ channel *channel_create(const char *name,void *ctx)
   c->fd_set = calloc(alloc_size / 32 + 1, sizeof(uint32_t));
   assert(c->fd_set != NULL);
   memset(c->fd_set,0,sizeof(uint32_t)*alloc_size);
-  pthread_create(&c->tid,NULL,channel_expire_ticker,c);
   return c;
 }
-int channel_cancel(channel *c, int fd)
+int channel_cancel_fd(channel *c, int fd)
 {
   if(c!=NULL && fd!=-1) {
     channel_clsbit(c,fd);

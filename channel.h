@@ -16,13 +16,12 @@ typedef struct channel_t {
   object  obj;
   size_t  active_fd;
   uint32_t  *fd_set;//save client fd,impl by bitmap
-  pthread_t tid;
   uint8_t  done;
   void *ctx;
 }channel;
 
 channel *channel_create(const char *name,void *ctx);
-int channel_cancel(channel *c,int fd);
+int channel_cancel_fd(channel *c,int fd);
 void channel_broadcast(channel *c);
 void channel_destroy(channel *c);
 #endif

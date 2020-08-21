@@ -28,6 +28,21 @@ typedef struct main_ev_io_t
   struct ev_io watcher;
   void *ctx;
 } main_ev_io;
+void *minkv_channel_expire_ticker(void *arg)
+{
+  min_kv *mv= (min_kv *)arg;
+  struct timeval tv;
+ tv.tv_sec = 0;
+ tv.tv_usec = 200000; /* 0.2 秒*/
+  for(;;)
+  {
+    select(0, NULL, NULL, NULL, &tv);
+    //access skiplist from max_level,and expire key
+    //todo
+  }
+  pthread_exit(NULL);
+  return NULL;
+}
 void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 {
   struct sockaddr_in client_addr;

@@ -10,6 +10,7 @@
 #include "hash_list.h"
 #include "thread.h"
 #include "utils.h"
+#include "list.h"
 typedef struct min_kv_t
 {
   //server socket fd
@@ -19,7 +20,11 @@ typedef struct min_kv_t
   struct ev_loop *loop;
   size_t thread_size;
   thread *threads;
-  //min_kv can create multi channels
-  list *channels;
+  //save list objects
+  list *list_objects;
+  //save channel objects
+  hash_list *channel_objects;
+  //save string objects
+  hash_list *string_objects;
 } min_kv;
 #endif
