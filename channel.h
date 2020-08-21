@@ -10,14 +10,18 @@
 #include "object.h"
 #include <stdio.h>
 #include <stdint.h>
+#include <pthread.h>
 typedef struct channel_t {
+    //save cuurrent value of this channel
   object  obj;
   size_t  active_fd;
   uint32_t  *fd_set;//save client fd,impl by bitmap
-  //save cuurrent value of this channel
+  pthread_t tid;
+  uint8_t  done;
+  void *ctx;
 }channel;
 
-channel *channel_create(const char *name,size_t size);
+channel *channel_create(const char *name,void *ctx);
 int channel_cancel(channel *c,int fd);
 void channel_broadcast(channel *c);
 void channel_destroy(channel *c);
