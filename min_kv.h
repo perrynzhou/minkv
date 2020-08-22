@@ -26,5 +26,7 @@ typedef struct min_kv_t
   hash_list *channel_objects;
   //save string objects
   hash_list *string_objects;
+  //save all keys share with object key
+  hash_list *keys;
 } min_kv;
 #endif

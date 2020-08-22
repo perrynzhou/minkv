@@ -12,16 +12,18 @@
 #include <pthread.h>
 typedef int (*hash_list_traverse_cb)(void *, void *);
 typedef int (*hash_list_data_free_cb)(void *);
+typedef int (*hash_list_data_cmp_cb)(void *src,void *dst);
 typedef struct hash_list_t
 {
   size_t max_size;
   size_t cur_size;
   void **arrays;
+  hash_list_data_cmp_cb  cmp;
 } hash_list;
-hash_list *hash_list_create(size_t max_size);
+hash_list *hash_list_create(size_t max_size,hash_list_data_cmp_cb  cmp);
 int hash_list_insert(hash_list *list, uint32_t key, void *item);
-void *hash_list_remove(hash_list *list, uint32_t key);
-void *hash_list_search(hash_list *list, uint32_t key);
+void *hash_list_remove(hash_list *list, uint32_t key,void *data);
+void *hash_list_search(hash_list *list, uint32_t key,void *data);
 void hash_list_traverse(hash_list *list, hash_list_traverse_cb cb, void *ctx);
 void hash_list_destroy(hash_list *list, hash_list_data_free_cb free_cb);
 #endif

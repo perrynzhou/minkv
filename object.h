@@ -20,6 +20,7 @@ typedef struct object_t
   uint8_t type;
   char *key;
   void *value;
+  size_t value_len;
 } object;
 object *object_create(const char *key, void *value, uint8_t type);
 const char *object_key(object *obj);

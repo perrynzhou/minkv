@@ -70,7 +70,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
   set_tcp_so_linger(cfd, 1, 0);
 
   min_kv *sv = (min_kv *)mev->ctx;
-  int tid = hash_jump_consistent(cfd, sv->thread_size);
+  uint32_t tid = hash_jump_consistent(cfd, sv->thread_size);
   thread *thd = &sv->threads[tid];
   thread_ev_io *client = (thread_ev_io *)queue_pop(thd->free_q);
   if (client == NULL)
