@@ -36,7 +36,7 @@ static void hash_list_node_destroy(hash_list_node *node, bool flag)
 }
 int hash_list_insert(hash_list *list, uint32_t key, void *item)
 {
-  uint64_t index = hash_jump_consistent(key, list->max_size);
+  uint32_t index = hash_jump_consistent(key, list->max_size);
   hash_list_node *node = hash_list_node_create(key, item);
   if (list->arrays[index] == NULL)
   {
@@ -64,25 +64,26 @@ int hash_list_insert(hash_list *list, uint32_t key, void *item)
   list->arrays[index] = node;
   return 0;
 }
-hash_list *hash_list_create(size_t max_size)
+hash_list *hash_list_create(size_t max_size,hash_list_data_cmp_cb  cmp)
 {
   hash_list *lt = (hash_list *)calloc(1, sizeof(*lt));
   lt->max_size = max_size;
   lt->cur_size = 0;
   lt->arrays = (void **)calloc(max_size, sizeof(void *));
+  lt->cmp = cmp;
   return lt;
 }
-void *hash_list_search(hash_list *list, uint32_t key)
+void *hash_list_search(hash_list *list, uint32_t key,void *data)
 {
   void *data = NULL;
-  uint64_t index = hash_jump_consistent(key, list->max_size);
+  uint32_t index = hash_jump_consistent(key, list->max_size);
   if (list->arrays[index] != NULL)
   {
     hash_list_node *cur = list->arrays[index];
     while (cur != NULL)
     {
       hash_list_node *next = cur->next;
-      if (cur->key == key)
+      if (cur->key == key && list->cmp(cur->data,data)==0)
       {
         data = cur->data;
         break;
@@ -92,13 +93,13 @@ void *hash_list_search(hash_list *list, uint32_t key)
   }
   return data;
 }
-void *hash_list_remove(hash_list *list, uint32_t key)
+void *hash_list_remove(hash_list *list, uint32_t key,void *data)
 {
   void *data = NULL;
 
   if (list != NULL)
   {
-    uint64_t index = hash_jump_consistent(key, list->max_size);
+    uint32_t index = hash_jump_consistent(key, list->max_size);
     if (list->arrays[index] != NULL)
     {
 
@@ -107,7 +108,7 @@ void *hash_list_remove(hash_list *list, uint32_t key)
       while (cur != NULL)
       {
         hash_list_node *next = cur->next;
-        if (cur->key == key)
+        if (cur->key == key && list->cmp(cur->data,data)==0)
         {
           data = cur->data;
           break;
